@@ -13,7 +13,7 @@ cars_fuel       100
 damage          6
 rows            60
 cols            60
-names           Demo Demo Demo Demo
+names           Demo Demo Demo Demo2
 
 
 ......................R..........R.....R............R.......
