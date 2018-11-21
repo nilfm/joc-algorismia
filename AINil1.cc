@@ -21,6 +21,9 @@ struct PLAYER_NAME : public Player {
     /**
     * Types and attributes for your player can be defined here.
     */
+    // Maxima fraccio de CPU que es fa servir abans de triar moviment random
+    const double MAX_STATUS = 0.99;
+    
     typedef vector<int> VI;
     typedef vector<VI> VVI;
 
