@@ -1,5 +1,5 @@
 #include "Player.hh"
-
+#include <queue>
 
 /**
  * Write the name of your player and save this file
@@ -23,6 +23,8 @@ struct PLAYER_NAME : public Player {
     */
     typedef vector<int> VI;
     typedef vector<VI> VVI;
+
+    //TODO: Dijkstra
 
     void move_warriors() {
         if (round()%4 != me()) return; //no es el meu torn
