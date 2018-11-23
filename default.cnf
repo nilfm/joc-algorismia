@@ -1,0 +1,13 @@
+Mad_Max 1.5
+nb_players        4
+nb_rounds       500
+nb_cities         8
+nb_warriors      20
+nb_cars           3
+warriors_health  40
+cars_fuel       100
+damage            6
+rows             60
+cols             60
+
+GENERATOR
