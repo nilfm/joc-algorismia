@@ -10,7 +10,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil2
+#define PLAYER_NAME Nil3
 
 
 struct PLAYER_NAME : public Player {
@@ -33,6 +33,10 @@ struct PLAYER_NAME : public Player {
     const int CAR_RANGE = 10;
     //Maxima distance a la qual el cotxe mirara per trobar fuel station
     const int FUEL_RANGE = 15;
+    //Minima aigua a la qual intentara anar a buscar aigua
+    const int MIN_WATER = 8;
+    //Minim menjar al qual intentara anar a buscar menjar
+    const int MIN_FOOD = 8;
     
     // Typedefs
     typedef vector<int> VI;
@@ -220,31 +224,58 @@ struct PLAYER_NAME : public Player {
         }
     }
 
+    Dir adjacent_enemy(const Pos& start) {
+        for (int i = 0; i < 8; i++) {
+            Dir d = Dir(i);
+            Pos p = start+d;
+            if (pos_ok(p) and cell_unit(cell(p)) == 3) return d;
+        }
+        return None;
+    }
+
+    Pos find_nearest_city(const Pos& start) {
+        int min_distance = 1e9;
+        Pos best_pos;
+        for (VP& v : all_cities) {
+            for (Pos p : v) {
+                int d = distance(start, p);
+                if (d < min_distance) {
+                    min_distance = d;
+                    best_pos = p;
+                }
+            }
+        }
+        return best_pos;
+    }
+
     void move_warriors() {
         if (round()%4 != me()) return; //no es el meu torn
         for (int w = 0; w < (int)my_warriors.size(); w++) {
             Unit curr = unit(my_warriors[w]);
-            bool cont = true;
-            for (int i = 0; i < 8 and cont; i++) {
-                Dir d = Dir(i);
-                Pos new_pos = curr.pos+d;
-                if (not is_forbidden(new_pos, false) and cell(new_pos).type == City) {
+            bool moved = false;
+            // if an enemy soldier is next to you
+            Dir adj_enemy = adjacent_enemy(curr.pos);
+            if (adj_enemy != None) {
+                move(my_warriors[w], adj_enemy);
+                moved = true;
+            }
+            //if you need water
+            else if (curr.water < MIN_WATER) {
+                //TO DO
+            }
+            //go to nearby city
+            else {
+                Pos p = find_nearest_city(curr.pos);
+                Dir d = find_direction(curr.pos, p);
+                if (not is_forbidden(p+d, false)) {
                     move(my_warriors[w], d);
-                    cont = false;
-                }
-                else if (not is_forbidden(new_pos, false) and cell_unit(cell(new_pos)) == 3) {
-                    move(my_warriors[w], d);
-                    cont = false;
+                    moved = true;
                 }
             }
-            VI v = random_permutation(8);
-            for (int i = 0; i < 8 and cont; i++) {
-                Dir d = Dir(v[i]);
-                Pos new_pos = curr.pos+d;
-                if (not is_forbidden(new_pos, false)) {
-                    move(my_warriors[w], d);
-                    cont = false;
-                }
+            if (not moved) {
+                Dir d_rand = random_safe_direction(curr.pos, false);
+                move(my_warriors[w], d_rand);
+                
             }
         }
     }

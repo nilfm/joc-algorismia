@@ -4,6 +4,8 @@ AINil1.o: AINil1.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
 AINil2.o: AINil2.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
+AINil3.o: AINil3.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
+ State.hh Action.hh Random.hh Registry.hh
 AINull.o: AINull.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
 Action.o: Action.cc Action.hh Structs.hh Utils.hh
