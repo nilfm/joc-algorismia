@@ -12,7 +12,7 @@
 #
 # 2) Uncomment the following line.
 #
-#DUMMY_OBJ = AIDummy.o
+DUMMY_OBJ = AIDummy.o
 
 # Add here any extra .o player files you want to link to the executable
 EXTRA_OBJS =
@@ -44,7 +44,7 @@ ifeq ($(strip $(32BITS)),1)
 	ARCHFLAGS=-m32 -L/usr/lib32
 endif
 
-CXXFLAGS = -std=c++11 -Wall -Wno-unused-variable $(ARCHFLAGS) $(PROFILEFLAGS) $(DEBUGFLAGS) -O$(strip $(OPTIMIZE))
+CXXFLAGS = -std=c++11 -Wall -Wno-unused-variable $(ARCHFLAGS) $(PROFILEFLAGS) $(DEBUGFLAGS) -O$(strip $(OPTIMIZE)) -no-pie
 
 LDFLAGS  = -std=c++11 -lm $(ARCHFLAGS) $(PROFILEFLAGS) $(DEBUGFLAGS) -O$(strip $(OPTIMIZE))
 
