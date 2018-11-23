@@ -30,11 +30,13 @@ struct PLAYER_NAME : public Player {
     // Maxima fraccio de CPU que es fa servir abans de triar moviment random
     const double MAX_STATUS = 0.99;
     // Maxima distancia a la qual el cotxe mirara per trobar soldats enemics
-    const int CAR_RANGE = 10;
+    const int CAR_RANGE = 12;
     //Maxima distance a la qual el cotxe mirara per trobar fuel station
     const int FUEL_RANGE = 15;
+    //Maxima distancia a la qual el soldat mirara per anar a buscar aigua
+    const int WATER_RANGE = 10;
     //Minima aigua a la qual intentara anar a buscar aigua
-    const int MIN_WATER = 8;
+    const int MIN_WATER = 12;
     //Minim menjar al qual intentara anar a buscar menjar
     const int MIN_FOOD = 8;
     
@@ -82,47 +84,28 @@ struct PLAYER_NAME : public Player {
         return (c.type == Road or c.type == Station or c.type == Desert or c.type == City);
     }
     
-    //Retorna el warrior enemic mes proper al qual pot accedir el cotxe
-    //Si no el troba, retorna una posicio (-1, -1)
-    Pos bfs_car_warrior(const Pos& start) {
+    //target 0: enemy warrior
+    //target 1: fuel
+    //target 2: water
+    Pos bfs(const Pos& start, int target) {
         queue<pair<Pos, int>> Q;
         SP seen;
         Q.push(make_pair(start, 0));
         bool cont = true;
         while (not Q.empty() and cont) {
             int dist = Q.front().second;
-            if (dist >= CAR_RANGE) cont = false;
+            int RANGE = 0;
+            if (target == 0) RANGE = CAR_RANGE;
+            else if (target == 1) RANGE = FUEL_RANGE;
+            else if (target == 2) RANGE = WATER_RANGE;
+            if (dist >= RANGE) cont = false;
             Pos p = Q.front().first;
             Q.pop();
-            if (pos_ok(p) and cell_unit(cell(p)) == 3) { 
-                return p;
-            };
-            if (pos_ok(p) and car_can_go(p) and not seen.count(p)) {
-                seen.insert(p);
-                for (int i = 0; i < 8; i++) {
-                    Dir d = Dir(i);
-                    Pos p2 = p + d;
-                    Q.push(make_pair(p2, dist+1));
-                }
+            if (pos_ok(p)) {
+                if (target == 0 and cell_unit(cell(p)) == 3) return p;
+                else if (target == 1 and cell(p).type == Station) return p;
+                else if (target == 2 and cell(p).type == Water) return p;
             }
-            
-        }
-        return Pos(-1, -1);
-    }
-    
-    //Busca la fuel station mes propera a la qual pot accedir el cotxe
-    //Si no la troba, retorna una posicio (-1, -1);
-    Pos bfs_car_fuel(const Pos& start) {
-        queue<pair<Pos, int>> Q;
-        SP seen;
-        Q.push(make_pair(start, 0));
-        bool cont = true;
-        while (not Q.empty() and cont) {
-            int dist = Q.front().second;
-            if (dist >= FUEL_RANGE) cont = false;
-            Pos p = Q.front().first;
-            Q.pop();
-            if (pos_ok(p) and cell(p).type == Station) return p;
             if (pos_ok(p) and car_can_go(p) and not seen.count(p)) {
                 seen.insert(p);
                 for (int i = 0; i < 8; i++) {
@@ -253,23 +236,32 @@ struct PLAYER_NAME : public Player {
         for (int w = 0; w < (int)my_warriors.size(); w++) {
             Unit curr = unit(my_warriors[w]);
             bool moved = false;
-            // if an enemy soldier is next to you
-            Dir adj_enemy = adjacent_enemy(curr.pos);
-            if (adj_enemy != None) {
-                move(my_warriors[w], adj_enemy);
-                moved = true;
-            }
-            //if you need water
-            else if (curr.water < MIN_WATER) {
-                //TO DO
-            }
-            //go to nearby city
-            else {
-                Pos p = find_nearest_city(curr.pos);
-                Dir d = find_direction(curr.pos, p);
-                if (not is_forbidden(p+d, false)) {
-                    move(my_warriors[w], d);
+            if (status(me()) < MAX_STATUS) {
+                // if an enemy soldier is next to you
+                Dir adj_enemy = adjacent_enemy(curr.pos);
+                if (adj_enemy != None) {
+                    move(my_warriors[w], adj_enemy);
                     moved = true;
+                }
+                //if you need water
+                else if (curr.water < MIN_WATER) {
+                    Pos near_water = bfs(curr.pos, 2);
+                    if (near_water.i != -1 or near_water.j != -1) {
+                        Dir d = find_direction(curr.pos, near_water);
+                        if (d != None and not is_forbidden(curr.pos+d, false)) {
+                            move(my_warriors[w], d);
+                            moved = true;
+                        }
+                    }
+                }
+                //go to nearby city
+                else {
+                    Pos p = find_nearest_city(curr.pos);
+                    Dir d = find_direction(curr.pos, p);
+                    if (not is_forbidden(p+d, false)) {
+                        move(my_warriors[w], d);
+                        moved = true;
+                    }
                 }
             }
             if (not moved) {
@@ -285,24 +277,26 @@ struct PLAYER_NAME : public Player {
             Unit curr = unit(my_cars[c]);
             bool moved = false;
             if (can_move(my_cars[c])) {
-                //Si no tenim fuel anem a buscar-ne
-                if (curr.food < 15) {
-                    Pos near_station = bfs_car_fuel(curr.pos);
-                    if (near_station.i != -1 or near_station.j != -1) {
-                        Dir d = find_direction(curr.pos, near_station);
-                        if (d != None and not is_forbidden(curr.pos+d, true)) {
-                            move(my_cars[c], d);
-                            moved = true;
+                if (status(me()) < MAX_STATUS) {
+                    //Si no tenim fuel anem a buscar-ne
+                    if (curr.food < 15) {
+                        Pos near_station = bfs(curr.pos, 1);
+                        if (near_station.i != -1 or near_station.j != -1) {
+                            Dir d = find_direction(curr.pos, near_station);
+                            if (d != None and not is_forbidden(curr.pos+d, true)) {
+                                move(my_cars[c], d);
+                                moved = true;
+                            }
                         }
                     }
-                }
-                else {
-                    Pos near_enemy = bfs_car_warrior(curr.pos);
-                    if (near_enemy.i != -1 or near_enemy.j != -1) {
-                        Dir d = find_direction(curr.pos, near_enemy);
-                        if (d != None and not is_forbidden(curr.pos+d, true)) {
-                            move(my_cars[c], d);
-                            moved = true;
+                    else {
+                        Pos near_enemy = bfs(curr.pos, 0);
+                        if (near_enemy.i != -1 or near_enemy.j != -1) {
+                            Dir d = find_direction(curr.pos, near_enemy);
+                            if (d != None and not is_forbidden(curr.pos+d, true)) {
+                                move(my_cars[c], d);
+                                moved = true;
+                            }
                         }
                     }
                 }
