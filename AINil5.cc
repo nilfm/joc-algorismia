@@ -10,7 +10,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil4
+#define PLAYER_NAME Nil5
 
 
 struct PLAYER_NAME : public Player {
@@ -97,38 +97,6 @@ struct PLAYER_NAME : public Player {
         return false;
     }
     
-    //target 0: enemy warrior
-    //target 1: enemy car
-    Pos bfs(const Pos& start, int target) {
-        queue<pair<Pos, int>> Q;
-        SP seen;
-        Q.push(make_pair(start, 0));
-        bool cont = true;
-        while (not Q.empty() and cont) {
-            int dist = Q.front().second;
-            int RANGE = 0;
-            if (target == 0) RANGE = CAR_RANGE;
-            if (target == 1) RANGE = ENEMY_CAR_RANGE;
-            if (dist >= RANGE) cont = false;
-            Pos p = Q.front().first;
-            Q.pop();
-            if (pos_ok(p)) {
-                if (target == 0 and cell_unit(cell(p)) == 3) return p;
-                else if (target == 1 and cell_unit(cell(p)) == 4) return p;
-            }
-            if (pos_ok(p) and car_can_go(p) and not seen.count(p)) {
-                seen.insert(p);
-                for (int i = 0; i < 8; i++) {
-                    Dir d = Dir(i);
-                    Pos p2 = p + d;
-                    Q.push(make_pair(p2, dist+1));
-                }
-            }
-            
-        }
-        return Pos(-1, -1);
-    }
-    
     bool is_empty(const Cell& c) {
         return (c.id == -1);
     }
@@ -213,7 +181,7 @@ struct PLAYER_NAME : public Player {
                     bool cond1 = not road and cell(start+curr).type == Road and curr_dist <= best_dist;
                     bool cond2 = road and cell(start+curr).type == Road and curr_dist < best_dist;
                     bool cond3 = not road and curr_dist < best_dist;
-                    bool cond4 = curr_dist <= 1;
+                    bool cond4 = curr_dist <= 2;
                     if (cond1 or cond2 or cond3 or cond4) {
                         best_dir = curr;
                         best_dist = curr_dist;
@@ -253,6 +221,8 @@ struct PLAYER_NAME : public Player {
         }
         return None;
     }
+    
+    //Find functions
 
     //if other, it will try to find only cities that are not controlled by me
     //if all cities are controlled by me, it will return (-1, -1)
@@ -301,6 +271,37 @@ struct PLAYER_NAME : public Player {
         return best_pos;
     }
     
+
+    Pos find_nearest_enemy_car(const Pos& start) {
+        int min_distance = 1e9;
+        Pos best_pos(-1, -1);
+        for (int id : enemy_cars) {
+            Pos p = unit(id).pos;
+            int d = distance(start, p);
+            if (d < min_distance) {
+                min_distance = d;
+                best_pos = p;
+            }
+        }
+        return best_pos;
+    }
+    
+    Pos find_nearest_enemy_warrior(const Pos& start) {
+        int min_distance = 1e9;
+        Pos best_pos(-1, -1);
+        for (int id : enemy_warriors) {
+            Pos p = unit(id).pos;
+            int d = distance(start, p);
+            if (d < min_distance) {
+                min_distance = d;
+                best_pos = p;
+            }
+        }
+        return best_pos;
+    }
+    
+    //Initialize functions
+    
     void initialize_water_fuel() {
         for (int i = 0; i < 60; i++) {
             for (int j = 0; j < 60; j++) {
@@ -339,34 +340,6 @@ struct PLAYER_NAME : public Player {
             }
         } 
         return v;
-    }
-
-    Pos find_nearest_enemy_car(const Pos& start) {
-        int min_distance = 1e9;
-        Pos best_pos(-1, -1);
-        for (int id : enemy_cars) {
-            Pos p = unit(id).pos;
-            int d = distance(start, p);
-            if (d < min_distance) {
-                min_distance = d;
-                best_pos = p;
-            }
-        }
-        return best_pos;
-    }
-    
-    Pos find_nearest_enemy_warrior(const Pos& start) {
-        int min_distance = 1e9;
-        Pos best_pos(-1, -1);
-        for (int id : enemy_warriors) {
-            Pos p = unit(id).pos;
-            int d = distance(start, p);
-            if (d < min_distance) {
-                min_distance = d;
-                best_pos = p;
-            }
-        }
-        return best_pos;
     }
 
     void move_warriors() {
