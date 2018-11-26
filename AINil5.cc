@@ -56,6 +56,7 @@ struct PLAYER_NAME : public Player {
     SP water;
     SP fuel;
     VVP all_cities;
+    VVI weighted_map;
 
     //Funcions auxiliars
     /**
@@ -341,6 +342,14 @@ struct PLAYER_NAME : public Player {
         } 
         return v;
     }
+    
+    void initialize_weighted_map() {
+        for (int i = 0; i < 60; i++) {
+            for (int j = 0; j < 60; j++) {
+                //TODO
+            }
+        }
+    }
 
     void move_warriors() {
         if (round()%4 != me()) return; //no es el meu torn
@@ -447,6 +456,7 @@ struct PLAYER_NAME : public Player {
         if (round() == 0) {
             all_cities = cities();
             initialize_water_fuel();
+            initialize_weighted_map();
         }
         
         //Preliminars cada ronda
@@ -455,6 +465,7 @@ struct PLAYER_NAME : public Player {
         my_cars = cars(me());
         enemy_cars = initialize_enemy_cars();
         already_moved = SP();
+        
         
         //Principal
         move_warriors();
