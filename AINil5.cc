@@ -56,6 +56,8 @@ struct PLAYER_NAME : public Player {
     SP water;
     SP fuel;
     VVP all_cities;
+    VVI car_map;
+    VVI warrior_map;
 
     //Funcions auxiliars
     /**
@@ -322,6 +324,23 @@ struct PLAYER_NAME : public Player {
         return v;
     }
 
+    void initialize_map() {
+        warrior_map = car_map = VVI(60, VI(60, 0));
+        for (int i = 0; i < 60; i++) {
+            for (int j = 0; j < 60; j++) {
+                Cell p = cell(i, j);
+                int& w = warrior_map[i][j];
+                int& c = car_map[i][j];
+                if (p.type == City) w += 5;
+                else if (p.type == Water) w += 3;
+                else if (p.type == Desert) w += 1;
+                
+                if (p.type == Road) c += 5;
+                else if (p.type == Desert) c += 1;
+            }
+        }
+    }
+
     void move_warriors() {
         if (round()%4 != me()) return; //no es el meu torn
         
@@ -435,6 +454,7 @@ struct PLAYER_NAME : public Player {
         if (round() == 0) {
             all_cities = cities();
             initialize_water_fuel();
+            initialize_map();
         }
         
         //Preliminars cada ronda
