@@ -2,12 +2,11 @@ import os
 import random
 import time
 import subprocess
+import math
 from subprocess import Popen
 from random import randint, shuffle
 import re
 import sys
-
-
 
 def get_command(seed):
     c = "./Game "
@@ -48,7 +47,7 @@ try:
           maxim = llista[j]
     guany[0][jugador] += 1
     used[jugador] = 1
-    print(str(i+1) + ". Ha guanyat el jugador " + str(jugador+1) + ": " + PLAYERS[jugador])
+    print(str(i+1) + ". " + " "*(len(str(n))-len(str(i+1))) + "Ha guanyat el jugador " + str(jugador+1) + ": " + PLAYERS[jugador])
     sys.stdout.flush()
     maxim = 0
     jugador = 1
