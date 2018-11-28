@@ -30,7 +30,9 @@ struct PLAYER_NAME : public Player {
     // Maxima fraccio de CPU que es fa servir abans de triar moviment random
     const double MAX_STATUS = 0.99;
     // Maxima distancia a la qual el cotxe mirara per trobar soldats enemics
-    const int CAR_RANGE = 10;
+    const int CAR_DETECT_RANGE = 15;
+    // Maxima distancia a la qual el cotxe mirara per atacar soldats enemics
+    const int CAR_ATTACK_RANGE = 5;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
     const int ENEMY_CAR_RANGE = 3;
     //Minima aigua a la qual intentara anar a buscar aigua
@@ -77,20 +79,45 @@ struct PLAYER_NAME : public Player {
         return 4;
     }
     
+    int amount_enemy_cars_around(const Pos& p) {
+        int count = 0;
+        for (int i = 0; i < (int)enemy_cars.size(); i++) {
+            Pos enemy = unit(enemy_cars[i]).pos;
+            if (distance(p, enemy) <= ENEMY_CAR_RANGE) count++;
+        }
+        return count;
+    }
+    
+    //returns weighted sum of warriors around pos p by distance to p
+    //warriors in a city count significantly less
+    int amount_enemy_warriors_around(const Pos& p) {
+        int count = 0;
+        for (int i = 0; i < (int)enemy_warriors.size(); i++) {
+            Pos enemy = unit(enemy_warriors[i]).pos;
+            int dist = distance(p, enemy);
+            if (dist <= CAR_DETECT_RANGE) {
+                if (cell(enemy).type == City) count += (CAR_DETECT_RANGE-dist)/5;
+                else count += (CAR_DETECT_RANGE-dist)/2;
+            }
+        }
+        return count;
+    }
+    
     int score(const Pos& p, bool car) {
-        return (car ? car_map[p.i][p.j] : warrior_map[p.i][p.j]);
+        if (not car) return warrior_map[p.i][p.j] - amount_enemy_cars_around(p);
+        else return car_map[p.i][p.j] + amount_enemy_warriors_around(p);
     }
     
     bool car_can_go(const Pos& p) {
         if (not pos_ok(p)) return false;
         Cell c = cell(p);
-        return (c.type == Road or c.type == Desert or c.type == Station);
+        return (c.type == Road or c.type == Desert);
     }
     
     bool warrior_can_go(const Pos& p) {
         if (not pos_ok(p)) return false;
         Cell c = cell(p);
-        return (c.type == Road or c.type == Station or c.type == Desert or c.type == City);
+        return (c.type == Road or c.type == Desert or c.type == City);
     }
     
     bool aggressive() {
@@ -151,7 +178,7 @@ struct PLAYER_NAME : public Player {
         
         //No car in the immediate surroundings
         Pos c = find_nearest_enemy_car(p);
-        if (car and distance(p, c) == 0) return false;
+        if (car and distance(p, c) < 2) return false;
         if (not car and distance(p, c) < ENEMY_CAR_RANGE) return false;
         
         return true;
@@ -165,7 +192,7 @@ struct PLAYER_NAME : public Player {
             Pos p = start + d;
             if (is_safe(p, car)) {
                 int curr_score = score(p, car);
-                if (curr_score > best_score or (curr_score == best_score and random(0, 1))) {
+                if (best_direction == None or (curr_score > best_score or (curr_score == best_score and random(0, 1)))) {
                     best_direction = d;
                     best_score = curr_score;
                 }
@@ -299,7 +326,7 @@ struct PLAYER_NAME : public Player {
         for (int id : enemy_warriors) {
             Pos p = unit(id).pos;
             int d = distance(start, p);
-            if (d < min_distance) {
+            if (d < min_distance and cell(p).type != City) {
                 min_distance = d;
                 best_pos = p;
             }
@@ -363,21 +390,21 @@ struct PLAYER_NAME : public Player {
                 Pos nearest_fuel = find_nearest_fuel(here);
                 int dist_fuel = distance(here, nearest_fuel);
                 
-                if (p.type == Wall) w = -1;
+                if (not warrior_can_go(here)) w = -1;
                 else {
-                    if (p.type == City) w += 10;
+                    if (p.type == City) w += 18;
                     if (dist_water < 5) w += 5-dist_water;
-                    if (dist_city < 8) w += 8-dist_city;
-                    if (dist_water + dist_city < 12) w += 10;
+                    if (dist_city < 8) w += 2*(8-dist_city);
+                    if (dist_water + dist_city < 12) w += 15;
                 }
                 
-                if (p.type == Wall or p.type == City or p.type == Water) c = -1;
+                if (not car_can_go(here)) c = -1;
                 else {
-                    if (p.type == Road) c += 15;
+                    if (p.type == Road) c += 25;
                     if (dist_water < 10) c += 5-dist_water/2;
                     if (dist_city < 15) c += 15-dist_city;
-                    if (dist_city < 3) c -= 6;
-                    if (dist_fuel < 20) c += 3;
+                    if (dist_city < 3) c -= 2*(4-dist_city);
+                    if (dist_fuel < 10) c += 5;
                     c += (30-distance(here, Pos(30, 30)))/3;
                 }
             }
@@ -455,21 +482,8 @@ struct PLAYER_NAME : public Player {
                         }
                     }
                     if (not moved) {
-                        Pos near_friend = find_nearest_friendly_car(curr.pos);
-                        if (distance(curr.pos, near_friend) < 4) {
-                            for (int i = 0; i < 8 and not moved; i++) {
-                                Dir d = Dir(i);
-                                Pos p = curr.pos+d;
-                                if (is_safe(p, true) and score(p, true) >= score(curr.pos, true)*0.9 and distance(p, near_friend) > distance(curr.pos, near_friend)) {
-                                    move(my_cars[c], d);
-                                    moved = true;
-                                }
-                            }
-                        }
-                    }
-                    if (not moved) {
                         Pos near_enemy = find_nearest_enemy_warrior(curr.pos);
-                        if (distance(curr.pos, near_enemy) < CAR_RANGE and cell(near_enemy).type != City) {
+                        if (distance(curr.pos, near_enemy) < CAR_ATTACK_RANGE) {
                             Dir d = find_direction(curr.pos, near_enemy, true);
                             if (d != None) {
                                 move(my_cars[c], d);
@@ -479,8 +493,8 @@ struct PLAYER_NAME : public Player {
                     }
                 }
                 if (not moved) {
-                    Dir d_rand = most_improved_direction(curr.pos, true);
-                    move(my_cars[c], d_rand);
+                    Dir d_improve = most_improved_direction(curr.pos, true);
+                    move(my_cars[c], d_improve);
                 }
             }
         }
