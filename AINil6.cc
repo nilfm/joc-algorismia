@@ -32,9 +32,9 @@ struct PLAYER_NAME : public Player {
     // Maxima distancia a la qual el cotxe mirara per trobar soldats enemics
     const int CAR_DETECT_RANGE = 15;
     // Maxima distancia a la qual el cotxe mirara per atacar soldats enemics
-    const int CAR_ATTACK_RANGE = 5;
+    const int CAR_ATTACK_RANGE = 6;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
-    const int ENEMY_CAR_RANGE = 3;
+    const int ENEMY_CAR_RANGE = 2;
     //Minima aigua a la qual intentara anar a buscar aigua
     const int MIN_WATER = 16;
     //Minim menjar al qual intentara anar a buscar menjar
@@ -425,7 +425,7 @@ struct PLAYER_NAME : public Player {
                 //escape from a car
                 Pos nearest_car = find_nearest_enemy_car(curr.pos);
                 int dist_car = distance(curr.pos, nearest_car);
-                if (dist_car < ENEMY_CAR_RANGE) {
+                if (dist_car < ENEMY_CAR_RANGE or curr.food < MIN_FOOD) {
                     Pos city = find_nearest_city(curr.pos, false);
                     Dir d = find_direction(curr.pos, city, false);
                     if (d != None) {
@@ -523,7 +523,7 @@ struct PLAYER_NAME : public Player {
         move_cars();
         
         //Debug
-        
+        /*
         if (round() == 499) {
             cerr << endl << "Warrior map:" << endl;
             for (int i = 0; i < 60; i++) {
@@ -543,6 +543,7 @@ struct PLAYER_NAME : public Player {
                 cerr << endl;
             }
         }
+        */
         
     }
 };
