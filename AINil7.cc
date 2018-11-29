@@ -1,6 +1,7 @@
 #include "Player.hh"
 #include <queue>
 #include <set>
+#include <stack>
 
 /* Per executar:
 ./Game Demo Demo Demo Demo -s 30 -i default.cnf -o default.res
@@ -218,6 +219,39 @@ struct PLAYER_NAME : public Player {
         return best_direction;
     }
     
+    Dir find_direction_bfs(const Pos& start, const Pos& end, bool car) {
+        VVI used(60, VI(60, false));
+        queue<Pos> Q;
+        map<Pos, Pos> pare;
+        Q.push(start);
+        pare[start] = start;
+        used[start.i][start.j] = true;
+        bool cont = true;
+        while (not Q.empty() and cont) {
+            Pos p = Q.front(); Q.pop();
+            if (p == end) cont = false;
+            else if (p == start or (can_go(p, car) and is_safe(p, car))) {
+                for (int i = 0; i < 8; i++) {
+                    Dir d = Dir(i);
+                    Pos p2 = p+d;
+                    if (pos_ok(p2) and not used[p2.i][p2.j]) {
+                        Q.push(p2);
+                        used[p2.i][p2.j] = true;
+                        pare[p2] = p;
+                    }
+                }
+            }
+        }
+        if (cont) return None;
+        Pos p = end;
+        while (pare[p] != start) p = pare[p];
+        for (int i = 0; i < 8; i++) {
+            Dir d = Dir(i);
+            if (start+d == p) return d;
+        }
+        return None;
+    }
+
     //Aquesta funcio sera un Dijkstra
     //De moment es una merda
     Dir find_direction(const Pos& start, const Pos& end, bool car) {
@@ -469,7 +503,6 @@ struct PLAYER_NAME : public Player {
             Unit curr = unit(my_warriors[w]);
             bool moved = false;
             if (status(me()) < MAX_STATUS) {
-                
                 //escape from a car
                 Pos nearest_car = find_nearest_enemy_car(curr.pos);
                 int dist_car = distance(curr.pos, nearest_car);
@@ -491,7 +524,6 @@ struct PLAYER_NAME : public Player {
                         moved = true;
                     }
                 }
-                
                 //if you need water
                 else if (not moved and curr.water < MIN_WATER) {
                     Pos near_water = find_nearest_water(curr.pos);
