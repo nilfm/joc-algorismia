@@ -11,7 +11,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil8
+#define PLAYER_NAME Nil9
 
 
 struct PLAYER_NAME : public Player {
@@ -32,9 +32,9 @@ struct PLAYER_NAME : public Player {
     // Maxima fraccio de CPU que es fa servir abans de triar moviment random
     const double MAX_STATUS = 0.99;
     // Maxima distancia a la qual el cotxe mirara per trobar soldats enemics
-    const int CAR_DETECT_RANGE = 15;
+    const int CAR_DETECT_RANGE = 45;
     // Maxima distancia a la qual el cotxe mirara per atacar soldats enemics
-    const int CAR_ATTACK_RANGE = 7;
+    const int CAR_ATTACK_RANGE = 30;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
     const int ENEMY_CAR_RANGE = 2;
     //Minima aigua a la qual intentara anar a buscar aigua
