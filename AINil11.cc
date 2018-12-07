@@ -237,7 +237,6 @@ struct PLAYER_NAME : public Player {
 	}
     
     //Busca el soldat enemic mes proper / mes beneficios i troba la direccio apropiada per aproparse
-    //TO DO: fer que dos cotxes no persegueixin soldats molt propers
     Dir dijkstra(const Pos& start) {
 		priority_queue<IP, vector<IP>, CompPairIP<IP>> PQ;
 		VVI distances(60, VI(60, INF));
@@ -302,8 +301,6 @@ struct PLAYER_NAME : public Player {
         return None;
     }
 
-    //Aquesta funcio sera un Dijkstra
-    //De moment es una merda
     //TO DO: millorar o substituir aquesta funcio
     Dir find_direction(const Pos& start, const Pos& end, bool car) {
         int initial_dist = distance(start, end);
@@ -632,6 +629,8 @@ struct PLAYER_NAME : public Player {
             bool moved = false;
             if (status(me()) < MAX_STATUS) {
                 //TO DO: if in a city
+                //TO DO: Conquerir ciutats buides / amb pocs soldats (URGENT)
+                
                 //escape from a car
                 Pos nearest_car = find_nearest_enemy_car(curr.pos);
                 int dist_car = distance(curr.pos, nearest_car);
@@ -644,7 +643,7 @@ struct PLAYER_NAME : public Player {
                 }
                 
                 //TO DO: Millorar fight AI
-                // if an enemy soldier is next to you
+                //if an enemy soldier is next to you
                 Dir adj_enemy = adjacent_enemy(curr.pos);
                 if (not moved and adj_enemy != None) {
                     Unit enemy = unit(cell(curr.pos+adj_enemy).id);
@@ -670,6 +669,7 @@ struct PLAYER_NAME : public Player {
         }
     }
     
+    //De moment els deixo aixi, no cal millorar mes fins que els soldats siguin decents
     void move_cars() {
         //Per cada cotxe que tinc
         for (int c = 0; c < (int)my_cars.size(); c++) {
