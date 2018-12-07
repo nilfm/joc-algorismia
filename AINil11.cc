@@ -35,7 +35,7 @@ struct PLAYER_NAME : public Player {
     //Maxima distancia a la qual el cotxe mirara per trobar soldats enemics
     const int CAR_RANGE = 30;
     //Maxima distancia de la carretera a la qual estara un cotxe en qualsevol moment
-    const int MAX_DIST_ROAD = 3;
+    const int MAX_DIST_ROAD = 4;
     //Distancia a la qual el cotxe mirara al voltant d'un soldat per trobar altres soldats a prop
     const int ACCUMULATION_RADIUS = 5;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
@@ -61,6 +61,7 @@ struct PLAYER_NAME : public Player {
     VI enemy_warriors;
     VI enemy_cars;
     SP already_moved;
+    SP already_attacked;
     VVP all_cities;
     VVI car_map;
     VVI warrior_map;
@@ -222,10 +223,16 @@ struct PLAYER_NAME : public Player {
         return best_direction;
     }
     
-    bool is_better(int curr_dist_road, int curr_dist, int curr_acc, int best_dist, int best_acc) {
-		if (curr_dist_road > MAX_DIST_ROAD) return false;
+    bool is_better(int curr_dist, int curr_acc, int best_dist, int best_acc) {
 		if (curr_dist <= best_dist and curr_acc >= best_acc) return true;
 		if (curr_acc >= 2*best_acc and curr_dist < 2*best_dist) return true;
+		return false;
+	}
+    
+    bool already_attacked_near(const Pos& p) {
+		for (Pos q : already_attacked) {
+			if (distance(p, q) < ACCUMULATION_RADIUS) return true;
+		}
 		return false;
 	}
     
@@ -246,11 +253,13 @@ struct PLAYER_NAME : public Player {
             int dist = PQ.top().first; 
             PQ.pop();
             if (dist == distances[p.i][p.j]) {
-				if (cell_unit(cell(p)) == 3) {
+				if (cell_unit(cell(p)) == 3 and not already_attacked_near(p)) {
 					int curr_acc = enemy_warriors_around(p);
-					if (not pos_ok(best) or is_better(distance_from_road[p.i][p.j], dist, curr_acc, distances[best.i][best.j], best_acc)) {
-						best_acc = curr_acc;
-						best = p;
+					if (distance_from_road[p.i][p.j] < MAX_DIST_ROAD) {
+						if (not pos_ok(best) or is_better(dist, curr_acc, distances[best.i][best.j], best_acc)) {
+							best_acc = curr_acc;
+							best = p;
+						}
 					}
 				}
 				
@@ -270,6 +279,7 @@ struct PLAYER_NAME : public Player {
         }
         if (not pos_ok(best)) return None;
                
+        already_attacked.insert(best);
         Pos p = best;
         while (distance(p, start) > 1) {
 			int next_dist = INF;
@@ -294,6 +304,7 @@ struct PLAYER_NAME : public Player {
 
     //Aquesta funcio sera un Dijkstra
     //De moment es una merda
+    //TO DO: millorar o substituir aquesta funcio
     Dir find_direction(const Pos& start, const Pos& end, bool car) {
         int initial_dist = distance(start, end);
         int best_dist = initial_dist;
@@ -711,7 +722,7 @@ struct PLAYER_NAME : public Player {
         enemy_warriors = initialize_enemy_warriors();
         my_cars = cars(me());
         enemy_cars = initialize_enemy_cars();
-        already_moved = SP();
+        already_moved = already_attacked = SP();
         
         //Principal
         move_warriors();
