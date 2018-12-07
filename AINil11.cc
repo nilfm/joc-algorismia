@@ -12,7 +12,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil10
+#define PLAYER_NAME Nil11
 
 
 struct PLAYER_NAME : public Player {
@@ -230,6 +230,7 @@ struct PLAYER_NAME : public Player {
 	}
     
     //Busca el soldat enemic mes proper / mes beneficios i troba la direccio apropiada per aproparse
+    //TO DO: fer que dos cotxes no persegueixin soldats molt propers
     Dir dijkstra(const Pos& start) {
 		priority_queue<IP, vector<IP>, CompPairIP<IP>> PQ;
 		VVI distances(60, VI(60, INF));
