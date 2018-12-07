@@ -35,7 +35,7 @@ struct PLAYER_NAME : public Player {
     //Maxima distancia a la qual el cotxe mirara per trobar soldats enemics
     const int CAR_RANGE = 30;
     //Maxima distancia de la carretera a la qual estara un cotxe en qualsevol moment
-    const int MAX_DIST_ROAD = 4;
+    const int MAX_DIST_ROAD = 3;
     //Distancia a la qual el cotxe mirara al voltant d'un soldat per trobar altres soldats a prop
     const int ACCUMULATION_RADIUS = 5;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
@@ -758,7 +758,11 @@ struct PLAYER_NAME : public Player {
             cerr << "Distances from fuel: " << endl;
             for (int i = 0; i < 60; i++) {
                 for (int j = 0; j < 60; j++) {
-                    cerr << distance_from_fuel[i][j] << " ";
+					if (distance_from_fuel[i][j] == INF) cerr << "NO ";
+					else {
+						if (distance_from_fuel[i][j] < 10) cerr << 0;
+						cerr << distance_from_fuel[i][j] << " ";
+					}
                 }
                 cerr << endl;
             }
