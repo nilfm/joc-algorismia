@@ -132,7 +132,7 @@ function parseData (raw_data_str) {
   }
 
   data.version = t[p++];
-  if (data.version != "1.5") alert("Unsupported game version! Trying to load it anyway.");
+  if (data.version != "1.6") alert("Unsupported game version! Trying to load it anyway.");
 
   parse_assert(t[p++], "nb_players");
   data.nb_players = int(t[p++]);

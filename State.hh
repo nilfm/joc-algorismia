@@ -27,7 +27,6 @@ class State {
   vector<int> num_cities_;
   vector<int> total_score_;
   vector<double> cpu_status_; // -1 -> dead, 0..1 -> % of cpu time limit
-  vector< vector<Pos> > cells_cities_;
   vector< vector<int> > warriors_;
   vector< vector<int> > cars_;
 
@@ -139,14 +138,6 @@ public:
       return vector<int>();
     }
     return cars_[pl];
-  }
-
-  /**
-   * Returns a vector of size 8.
-   * Each position has a vector with the positions of the cells of one city.
-   */
-  inline vector<vector<Pos>> cities () const {
-    return cells_cities_;
   }
 
   /**

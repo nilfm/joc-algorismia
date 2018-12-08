@@ -1,22 +1,10 @@
 AIDemo.o: AIDemo.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
-AINil1.o: AINil1.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
- State.hh Action.hh Random.hh Registry.hh
 AINil10.o: AINil10.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
 AINil11.o: AINil11.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
 AINil12.o: AINil12.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
- State.hh Action.hh Random.hh Registry.hh
-AINil2.o: AINil2.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
- State.hh Action.hh Random.hh Registry.hh
-AINil3.o: AINil3.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
- State.hh Action.hh Random.hh Registry.hh
-AINil4.o: AINil4.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
- State.hh Action.hh Random.hh Registry.hh
-AINil5.o: AINil5.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
- State.hh Action.hh Random.hh Registry.hh
-AINil6.o: AINil6.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
 AINil7.o: AINil7.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh

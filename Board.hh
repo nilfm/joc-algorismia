@@ -23,6 +23,7 @@ class Board : public Info, public Random_generator {
 
   vector<string> names_;
   string generator_;
+  vector< vector<Pos> > cells_cities_;
 
   /**
    * Used by generate random maps.

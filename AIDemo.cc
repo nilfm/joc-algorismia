@@ -67,7 +67,6 @@ struct PLAYER_NAME : public Player {
           else if (unit(id).water > 10) command(id, Left);
           else if (cell(10, 20).owner == 2) command(id, None);
           else if (num_cities(3) == 1) command(id, LB);
-          else if (cell(cities()[7][0]).owner != me()) command(id, Right);
           else cerr << unit(id).pos << endl; // You can print to cerr to debug.
         }
       }
