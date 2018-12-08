@@ -12,7 +12,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil11
+#define PLAYER_NAME Nil12
 
 
 struct PLAYER_NAME : public Player {
@@ -261,6 +261,7 @@ struct PLAYER_NAME : public Player {
 					Dir d = Dir(i);
 					Pos p2 = p+d;
 					int curr_dist = dist + cost;
+					//TO DO: quan hi ha un enemic a distancia 1 i un aliat a distancia 2 pegant-se, no hi va perque la de distancia 2 no es segura
 					if (pos_ok(p2) and car_can_go(p2) and curr_dist < CAR_RANGE and (is_safe(p2, true) or distance(start, p2) > 2)) {
 						if (curr_dist < distances[p2.i][p2.j]) {
 							PQ.push(make_pair(curr_dist, p2));
