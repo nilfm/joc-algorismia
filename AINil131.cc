@@ -315,7 +315,6 @@ struct PLAYER_NAME : public Player {
         return None;
     }
 
-    //Hauria de retornar una pos i despres fer bfs o dijkstra alli
     Dir find_city_to_conquer(const Pos& start) {
         int min_dist = INF;
         Pos best_pos(-1, -1);
@@ -783,7 +782,7 @@ struct PLAYER_NAME : public Player {
                 if (not moved and aggressive) {
                     int n_city = -1;
                     if (cell(curr.pos).type == City) n_city = num_city(curr.pos);
-                    if (cell(curr.pos).type != City or allies_in_city[n_city] > max(2, enemies_in_city[n_city] + 1)) {
+                    if (cell(curr.pos).type != City or allies_in_city[n_city] > max(1, enemies_in_city[n_city] + 1)) {
                         //anem a conquerir una ciutat a prop
                         Dir d = find_city_to_conquer(curr.pos);
                         if (d != None) {
