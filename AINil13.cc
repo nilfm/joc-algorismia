@@ -12,7 +12,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil12
+#define PLAYER_NAME Nil13
 
 
 struct PLAYER_NAME : public Player {
@@ -39,7 +39,7 @@ struct PLAYER_NAME : public Player {
     //Distancia a la qual el cotxe mirara al voltant d'un soldat per trobar altres soldats a prop
     const int ACCUMULATION_RADIUS = 5;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
-    const int ENEMY_CAR_RANGE = 2;
+    const int ENEMY_CAR_RANGE = 3;
     //Minima aigua a la qual intentara anar a buscar aigua
     const int MIN_WATER = 16;
     //Minim menjar al qual intentara anar a buscar menjar
@@ -66,6 +66,8 @@ struct PLAYER_NAME : public Player {
     VVP all_cities;
     VI allies_in_city;
     VI enemies_in_city;
+    VI allies_entering_city;
+    VI allies_leaving_city;
     VI city_owner;
     VVI car_map;
     VVI warrior_map;
@@ -104,6 +106,11 @@ struct PLAYER_NAME : public Player {
         return 4;
     }
     
+    //Returns allies in city - enemies in city
+    int city_balance(int i) {
+        return allies_in_city[i] + allies_entering_city[i] - allies_leaving_city[i] - enemies_in_city[i];
+    }
+    
     int enemy_cars_around(const Pos& p) {
         int count = 0;
         for (int i = 0; i < (int)enemy_cars.size(); i++) {
@@ -117,11 +124,11 @@ struct PLAYER_NAME : public Player {
     int enemy_warriors_around(const Pos& p) {
         int count = 0;
         for (int i = -ACCUMULATION_RADIUS; i <= ACCUMULATION_RADIUS; i++) {
-			for (int j = -ACCUMULATION_RADIUS; j <= ACCUMULATION_RADIUS; j++) {
-				Pos curr = Pos(p.i+i, p.j+j);
-				if (pos_ok(curr) and cell_unit(cell(curr)) == 3) count += (cell(curr).type == City ? 1 : 3);
-			}
-		}
+            for (int j = -ACCUMULATION_RADIUS; j <= ACCUMULATION_RADIUS; j++) {
+                Pos curr = Pos(p.i+i, p.j+j);
+                if (pos_ok(curr) and cell_unit(cell(curr)) == 3) count += (cell(curr).type == City ? 1 : 3);
+            }
+        }
         return count;
     }
     
@@ -172,10 +179,22 @@ struct PLAYER_NAME : public Player {
     }
 
     void move(int id, Dir d) {
-        Pos p = unit(id).pos;
-        p += d;
+        Pos original = unit(id).pos;
+        Pos p = original + d;
         command(id, d);
         already_moved.insert(p);
+        if (unit(id).type == Warrior) {
+            Cell c1 = cell(original);
+            Cell c2 = cell(p);
+            if (c1.type == City and c2.type != City) {
+                int n = num_city(original);
+                allies_leaving_city[n]++;
+            }
+            else if (c1.type != City and c2.type == City) {
+                int n = num_city(p);
+                allies_entering_city[n]++;
+            }
+        }
     }
     
     int distance(const Pos& p1, const Pos& p2) {
@@ -218,22 +237,22 @@ struct PLAYER_NAME : public Player {
     }
     
     bool is_better(int curr_dist, int curr_acc, int best_dist, int best_acc) {
-		if (curr_dist <= best_dist and curr_acc >= best_acc) return true;
-		if (curr_acc >= 2*best_acc and curr_dist < 2*best_dist) return true;
-		return false;
-	}
+        if (curr_dist <= best_dist and curr_acc >= best_acc) return true;
+        if (curr_acc >= 2*best_acc and curr_dist < 2*best_dist) return true;
+        return false;
+    }
     
     bool already_attacked_near(const Pos& p) {
-		for (Pos q : already_attacked) {
-			if (distance(p, q) < ACCUMULATION_RADIUS) return true;
-		}
-		return false;
-	}
+        for (Pos q : already_attacked) {
+            if (distance(p, q) < ACCUMULATION_RADIUS) return true;
+        }
+        return false;
+    }
     
     //Busca el soldat enemic mes proper / mes beneficios i troba la direccio apropiada per aproparse
     Dir dijkstra(const Pos& start) {
-		priority_queue<IP, vector<IP>, CompPairIP<IP>> PQ;
-		VVI distances(60, VI(60, INF));
+        priority_queue<IP, vector<IP>, CompPairIP<IP>> PQ;
+        VVI distances(60, VI(60, INF));
         PQ.push(make_pair(0, start));
         distances[start.i][start.j] = 0;
         bool cont = true;
@@ -246,28 +265,29 @@ struct PLAYER_NAME : public Player {
             int dist = PQ.top().first; 
             PQ.pop();
             if (dist == distances[p.i][p.j]) {
-				if (cell_unit(cell(p)) == 3 and not already_attacked_near(p)) {
-					int curr_acc = enemy_warriors_around(p);
-					if (distance_from_road[p.i][p.j] < MAX_DIST_ROAD) {
-						if (not pos_ok(best) or is_better(dist, curr_acc, distances[best.i][best.j], best_acc)) {
-							best_acc = curr_acc;
-							best = p;
-						}
-					}
-				}
-				
-				int cost = (cell(p).type == Road ? 1 : 4);
-				for (int i = 0; i < 8; i++) {
-					Dir d = Dir(i);
-					Pos p2 = p+d;
-					int curr_dist = dist + cost;
-					if (pos_ok(p2) and car_can_go(p2) and curr_dist < CAR_RANGE and (is_safe(p2, true) or distance(start, p2) > 2)) {
-						if (curr_dist < distances[p2.i][p2.j]) {
-							PQ.push(make_pair(curr_dist, p2));
-							distances[p2.i][p2.j] = curr_dist;
-						}
-					}
-				}
+                if (cell_unit(cell(p)) == 3 and not already_attacked_near(p)) {
+                    int curr_acc = enemy_warriors_around(p);
+                    if (distance_from_road[p.i][p.j] < MAX_DIST_ROAD) {
+                        if (not pos_ok(best) or is_better(dist, curr_acc, distances[best.i][best.j], best_acc)) {
+                            best_acc = curr_acc;
+                            best = p;
+                        }
+                    }
+                }
+                
+                int cost = (cell(p).type == Road ? 1 : 4);
+                for (int i = 0; i < 8; i++) {
+                    Dir d = Dir(i);
+                    Pos p2 = p+d;
+                    int curr_dist = dist + cost;
+                    //TO DO: quan hi ha un enemic a distancia 1 i un aliat a distancia 2 pegant-se, no hi va perque la de distancia 2 no es segura
+                    if (pos_ok(p2) and car_can_go(p2) and curr_dist < CAR_RANGE and (is_safe(p2, true) or distance(start, p2) > 2)) {
+                        if (curr_dist < distances[p2.i][p2.j]) {
+                            PQ.push(make_pair(curr_dist, p2));
+                            distances[p2.i][p2.j] = curr_dist;
+                        }
+                    }
+                }
             }
         }
         if (not pos_ok(best)) return None;
@@ -275,18 +295,18 @@ struct PLAYER_NAME : public Player {
         already_attacked.insert(best);
         Pos p = best;
         while (distance(p, start) > 1) {
-			int next_dist = INF;
-			Pos next_pos = p;
-			for (int i = 0; i < 8; i++) {
-				Dir d = Dir(i);
-				Pos p2 = p+d;
-				if (pos_ok(p2) and (distances[p2.i][p2.j] < next_dist or (distances[p2.i][p2.j] == next_dist and cell(p2).type == Road))) {
-					next_dist = distances[p2.i][p2.j];
-					next_pos = p2;
-				}
-			}
-			p = next_pos;
-		}
+            int next_dist = INF;
+            Pos next_pos = p;
+            for (int i = 0; i < 8; i++) {
+                Dir d = Dir(i);
+                Pos p2 = p+d;
+                if (pos_ok(p2) and (distances[p2.i][p2.j] < next_dist or (distances[p2.i][p2.j] == next_dist and cell(p2).type == Road))) {
+                    next_dist = distances[p2.i][p2.j];
+                    next_pos = p2;
+                }
+            }
+            p = next_pos;
+        }
 
         for (int i = 0; i < 8; i++) {
             Dir d = Dir(i);
@@ -295,28 +315,28 @@ struct PLAYER_NAME : public Player {
         return None;
     }
 
-	Dir find_city_to_conquer(const Pos& start) {
-		int min_dist = INF;
-		Pos best_pos(-1, -1);
-		for (int i = 0; i < (int)all_cities.size(); i++) {
-			for (int j = 0; j < (int)all_cities[i].size(); j++) {
-				Pos p = all_cities[i][j];
-				int dist = distance(start, p);
-				if ((cell(p).owner != me()) and dist < min_dist) {
-					min_dist = dist;
-					best_pos = p;
-				}
-			}
-		}
-		for (int i = 0; i < 8; i++) {
-			Dir d = Dir(i);
-			Pos p = start + d;
-			if (is_safe(p, false) and distance(p, best_pos) < min_dist) {
-				return d;
-			}
-		}
-		return None;
-	}
+    Dir find_city_to_conquer(const Pos& start) {
+        int min_dist = INF;
+        Pos best_pos(-1, -1);
+        for (int i = 0; i < (int)all_cities.size(); i++) {
+            for (int j = 0; j < (int)all_cities[i].size(); j++) {
+                Pos p = all_cities[i][j];
+                int dist = distance(start, p);
+                if ((cell(p).owner != me()) and dist < min_dist) {
+                    min_dist = dist;
+                    best_pos = p;
+                }
+            }
+        }
+        for (int i = 0; i < 8; i++) {
+            Dir d = Dir(i);
+            Pos p = start + d;
+            if (is_safe(p, false) and distance(p, best_pos) < min_dist) {
+                return d;
+            }
+        }
+        return None;
+    }
 
     Dir adjacent_enemy(const Pos& start) {
         for (int i = 0; i < 8; i++) {
@@ -347,9 +367,9 @@ struct PLAYER_NAME : public Player {
             int curr_dist = -1; //per inicialitzar correctament
             if (pos_ok(p2)) curr_dist = distance_from_fuel[p2.i][p2.j];
             if (pos_ok(p2) and is_safe(p2, true) and (curr_dist < best_dist or (curr_dist == best_dist and cell(p2).type == Road))) {
-				best_dist = curr_dist;
-				best_dir = d;
-			}
+                best_dist = curr_dist;
+                best_dir = d;
+            }
         }        
         return best_dir;
     }
@@ -505,8 +525,8 @@ struct PLAYER_NAME : public Player {
                     bfs_city(Pos(i, j));
                 }
                 else if (c.type == Road) {
-					bfs_road(Pos(i, j));
-				}
+                    bfs_road(Pos(i, j));
+                }
             }
         }
     }
@@ -571,22 +591,24 @@ struct PLAYER_NAME : public Player {
     }
     
     void initialize_city_stats() {
-		num_cities_owned = 0;
-		city_owner = VI(8, false);
-		allies_in_city = VI(8, 0);
-		enemies_in_city = VI(8, 0);
-		for (int i = 0; i < (int)all_cities.size(); i++) {
-			if (cell(all_cities[i][0]).owner == me()) {
-				city_owner[i] = true;
-				num_cities_owned++;
-			}
-			for (int j = 0; j < (int)all_cities[i].size(); j++) {
-				int u = cell_unit(cell(all_cities[i][j]));
-				if (u == 1) allies_in_city[i]++;
-				else if (u == 3) enemies_in_city[i]++;
-			}
-		}
-	}
+        num_cities_owned = 0;
+        city_owner = VI(8, false);
+        allies_in_city = VI(8, 0);
+        enemies_in_city = VI(8, 0);
+        allies_entering_city = VI(8, 0);
+        allies_leaving_city = VI(8, 0);
+        for (int i = 0; i < (int)all_cities.size(); i++) {
+            if (cell(all_cities[i][0]).owner == me()) {
+                city_owner[i] = true;
+                num_cities_owned++;
+            }
+            for (int j = 0; j < (int)all_cities[i].size(); j++) {
+                int u = cell_unit(cell(all_cities[i][j]));
+                if (u == 1) allies_in_city[i]++;
+                else if (u == 3) enemies_in_city[i]++;
+            }
+        }
+    }
     
     void initialize_map() {
         warrior_map = car_map = VVI(60, VI(60, 0));
@@ -600,10 +622,11 @@ struct PLAYER_NAME : public Player {
                 int dist_city = distance_from_city[i][j];
                 int dist_fuel = distance_from_fuel[i][j];
                 int dist_water = distance_from_water[i][j];
+                int dist_road = distance_from_road[i][j];
                 
                 if (not warrior_can_go(here)) w = -1;
                 else {
-                    if (p.type == City) w += 18;
+                    if (p.type == City) w += 25;
                     if (dist_water < 5) w += 5-dist_water;
                     if (dist_city < 8) w += 2*(8-dist_city);
                     if (dist_water + dist_city < 12) w += 15;
@@ -611,7 +634,7 @@ struct PLAYER_NAME : public Player {
                 
                 if (not car_can_go(here)) c = -1;
                 else {
-                    if (p.type == Road) c += 200;
+                    c += 100*(5 - dist_road);
                     if (dist_water + dist_city < 16) c += 15;
                     if (dist_city < 15) c += 15-dist_city;
                     if (dist_city < 3) c -= 2*(4-dist_city);
@@ -624,26 +647,52 @@ struct PLAYER_NAME : public Player {
     //pre: p is in a city
     //returns number 0-7 with the number of the city it belongs to
     int num_city(const Pos& p) {
-		for (int i = 0; i < (int)all_cities.size(); i++) {
-			for (int j = 0; j < (int)all_cities[i].size(); j++) {
-				if (p == all_cities[i][j]) return i;
-			}
-		}
-		return -1;
-	}
+        for (int i = 0; i < (int)all_cities.size(); i++) {
+            for (int j = 0; j < (int)all_cities[i].size(); j++) {
+                if (p == all_cities[i][j]) return i;
+            }
+        }
+        return -1;
+    }
     
     bool calculate_aggressive() {
-		//Si anem perdent
-		int my = total_score(me());
-		for (int i = 1; i < 4; i++) {
-			if (total_score((me()+i)%4) > my) return true;
-		}
-		
-		//Si tenim menys de 4 ciutats
-		if (num_cities_owned < 4) return true;
-		
-		return false;
-	}
+        //Si anem perdent
+        int my = total_score(me());
+        for (int i = 1; i < 4; i++) {
+            if (total_score((me()+i)%4) > my and round() > 250) return true;
+        }
+        
+        //Si tenim menys de 3 ciutats
+        if (num_cities_owned < 3) return true;
+        
+        return false;
+    }
+    
+    Dir adjacent_empty_city(const Pos& p) {
+        for (int i = 0; i < 8; i++) {
+            Dir d = Dir(i);
+            Pos p2 = p+d;
+            if (pos_ok(p2) and cell(p2).type == City) {
+                int n_city = num_city(p2);
+                if (allies_in_city[n_city] + allies_entering_city[n_city] - allies_leaving_city[n_city] == 0 and enemies_in_city[n_city] == 0) {
+                    return d;
+                }
+            }
+        }
+        return None;
+    }
+    
+    Dir escape_from_car(const Pos& me, const Pos& car) {
+        int dist_road = distance_from_road[me.i][me.j];
+        int dist_car = distance(me, car);
+        for (int i = 0; i < 8; i++) {
+            Dir d = Dir(i);
+            Pos p = me + d;
+            if (pos_ok(p) and cell(p).type == City) return d;
+            if (pos_ok(p) and is_safe(p, false) and distance_from_road[p.i][p.j] > dist_road and distance(p, car) >= dist_car) return d;
+        }
+        return None;
+    }
 
     void move_warriors() {
         if (round()%4 != me()) return; //no es el meu torn
@@ -651,79 +700,98 @@ struct PLAYER_NAME : public Player {
         
         //Per cada warrior que tinc
         for (int w = 0; w < (int)my_warriors.size(); w++) {
+            //cerr << "Warrior " << w << " (id " << my_warriors[w] << ")" << endl;
             Unit curr = unit(my_warriors[w]);
             bool moved = false;
             if (status(me()) < MAX_STATUS) {
-                //TO DO: Conquerir ciutats buides / amb pocs soldats (URGENT)
+                //si no tinc set i estic al costat d'una ciutat buida
+                //cerr << "  Empty city" << endl;
+                if (curr.water >= MIN_WATER and cell(curr.pos).type != City) {
+                    Dir d = adjacent_empty_city(curr.pos);
+                    if (d != None) {
+                        move(my_warriors[w], d);
+                        moved = true;
+                    }
+                }
+                //cerr << "  End empty city" << endl;
                 
                 //escape from a car - TO DO: improve detection of nearby cars by road
+                //cerr << "  Escape" << endl;
                 Pos nearest_car = find_nearest_enemy_car(curr.pos);
                 int dist_car = distance(curr.pos, nearest_car);
                 int multiplier = (distance_from_road[curr.pos.i][curr.pos.j] < 2 ? 2 : 1);
-                if (dist_car < multiplier*ENEMY_CAR_RANGE) {
-					if (cell(curr.pos).type != City) {
-						//TO DO: make them escape better
-						Dir d = find_nearest_city(curr.pos);
-						if (d != None) {
-							move(my_warriors[w], d);
-							moved = true;
-						}
-					}
-					else {
-						//Si estem en ciutat i amb un cotxe enemic a prop
-						Dir adj_enemy = adjacent_enemy(curr.pos);
-						if (not moved and adj_enemy != None) {
-							Unit enemy = unit(cell(curr.pos+adj_enemy).id);
-							if (min(curr.food, curr.water) > min(enemy.food, enemy.water)) {
-								move(my_warriors[w], adj_enemy);
-								moved = true;
-							}
-							else {
-								//TO DO: refactor this
-								for (int i = 0; i < 8; i++) {
-									Dir d = Dir(i);
-									Pos p = curr.pos + d;
-									if (cell(p).type == City and adjacent_enemy(p) == None) {
-										move(my_warriors[w], d);
-										moved = true;
-									}
-									else {
-										move(my_warriors[w], adj_enemy);
-										moved = true;
-									}
-								}
-							}
-						}					
-					}
-				}
+                if (not moved and dist_car < multiplier*ENEMY_CAR_RANGE) {
+                    if (cell(curr.pos).type != City) {
+                        Dir d = escape_from_car(curr.pos, nearest_car);
+                        if (d != None) {
+                            move(my_warriors[w], d);
+                            moved = true;
+                        }
+                    }
+                    else {
+                        //Si estem en ciutat i amb un cotxe enemic a prop
+                        Dir adj_enemy = adjacent_enemy(curr.pos);
+                        if (not moved and adj_enemy != None) {
+                            Unit enemy = unit(cell(curr.pos+adj_enemy).id);
+                            if (min(curr.food, curr.water) > min(enemy.food, enemy.water)) {
+                                move(my_warriors[w], adj_enemy);
+                                moved = true;
+                            }
+                            else {
+                                //TO DO: refactor this
+                                for (int i = 0; i < 8; i++) {
+                                    Dir d = Dir(i);
+                                    Pos p = curr.pos + d;
+                                    if (not moved and cell(p).type == City and adjacent_enemy(p) == None) {
+                                        move(my_warriors[w], d);
+                                        moved = true;
+                                    }
+                                    else if (not moved) {
+                                        move(my_warriors[w], adj_enemy);
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }                    
+                    }
+                }
+                //cerr << "  End escape" << endl;
                 
                 //TO DO: Millorar fight AI
                 //if an enemy soldier is next to you
+                //cerr << "  Fight" << endl;
                 Dir adj_enemy = adjacent_enemy(curr.pos);
                 if (not moved and adj_enemy != None) {
                     move(my_warriors[w], adj_enemy);
                     moved = true;
                 }
+                //cerr << "  End fight" << endl;
                 
                 //if you need water - aquesta part ja esta be
-                else if (not moved and curr.water < MIN_WATER) {
+                //cerr << "  Water" << endl;
+                if (not moved and curr.water < MIN_WATER) {
                     Dir d = find_nearest_water(curr.pos);
                     if (d != None) {
                         move(my_warriors[w], d);
                         moved = true;
                     }
                 }
+                //cerr << "  End water" << endl;
                 
+                //cerr << "  Conquer" << endl;
                 if (not moved and aggressive) {
-					if (cell(curr.pos).type != City or allies_in_city[num_city(curr.pos)] != 1) {
-						//anem a conquerir una ciutat a prop
-						Dir d = find_city_to_conquer(curr.pos);
-						if (d != None) {
-							move(my_warriors[w], d);
-							moved = true;
-						}
-					}
-				}
+                    int n_city = -1;
+                    if (cell(curr.pos).type == City) n_city = num_city(curr.pos);
+                    if (cell(curr.pos).type != City or allies_in_city[n_city] > enemies_in_city[n_city] + 1) {
+                        //anem a conquerir una ciutat a prop
+                        Dir d = find_city_to_conquer(curr.pos);
+                        if (d != None) {
+                            move(my_warriors[w], d);
+                            moved = true;
+                        }
+                    }
+                }
+                //cerr << "  End conquer" << endl;
             }
             if (not moved) {
                 Dir d_improve = most_improved_direction(curr.pos, false);
@@ -736,7 +804,7 @@ struct PLAYER_NAME : public Player {
     void move_cars() {
         //Per cada cotxe que tinc
         for (int c = 0; c < (int)my_cars.size(); c++) {
-			//cerr << "Car " << my_cars[c] << endl;
+            //cerr << "Car " << my_cars[c] << endl;
             Unit curr = unit(my_cars[c]);
             bool moved = false;
             //si es pot moure aquest torn
@@ -744,24 +812,32 @@ struct PLAYER_NAME : public Player {
                 if (status(me()) < MAX_STATUS) {
                     //Si no tenim fuel anem a buscar-ne
                     if (curr.food < MIN_FUEL) {
-                        Dir d = find_nearest_fuel(curr.pos);
-                        if (d != None) {
-							//cerr << "  Looking for fuel" << endl;
-                            move(my_cars[c], d);
+                        //si tenim un warrior enemic adjacent
+                        Dir adj = adjacent_enemy(curr.pos);
+                        if (adj != None) {
+                            move(my_cars[c], adj);
                             moved = true;
+                        }
+                        else {
+                            Dir d = find_nearest_fuel(curr.pos);
+                            if (d != None) {
+                                //cerr << "  Looking for fuel" << endl;
+                                move(my_cars[c], d);
+                                moved = true;
+                            }
                         }
                     }
                     if (not moved) {
                         Dir d = dijkstra(curr.pos);
                         if (d != None) {
-							//cerr << "  Looking for enemy warrior" << endl;
+                            //cerr << "  Looking for enemy warrior" << endl;
                             move(my_cars[c], d);
                             moved = true;
                         }
                     }
                 }
                 if (not moved) {
-					//cerr << "  Moving in most improved direction" << endl;
+                    //cerr << "  Moving in most improved direction" << endl;
                     Dir d_improve = most_improved_direction(curr.pos, true);
                     move(my_cars[c], d_improve);
                 }
@@ -823,11 +899,11 @@ struct PLAYER_NAME : public Player {
             cerr << "Distances from fuel: " << endl;
             for (int i = 0; i < 60; i++) {
                 for (int j = 0; j < 60; j++) {
-					if (distance_from_fuel[i][j] == INF) cerr << "NO ";
-					else {
-						if (distance_from_fuel[i][j] < 10) cerr << 0;
-						cerr << distance_from_fuel[i][j] << " ";
-					}
+                    if (distance_from_fuel[i][j] == INF) cerr << "NO ";
+                    else {
+                        if (distance_from_fuel[i][j] < 10) cerr << 0;
+                        cerr << distance_from_fuel[i][j] << " ";
+                    }
                 }
                 cerr << endl;
             }

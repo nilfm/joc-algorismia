@@ -6,6 +6,8 @@ AINil11.o: AINil11.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
 AINil12.o: AINil12.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
+AINil13.o: AINil13.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
+ State.hh Action.hh Random.hh Registry.hh
 AINil7.o: AINil7.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
  State.hh Action.hh Random.hh Registry.hh
 AINil8.o: AINil8.cc Player.hh Info.hh Settings.hh Structs.hh Utils.hh \
