@@ -14,6 +14,9 @@
  */
 #define PLAYER_NAME Nil14
 
+//TO DO: Fer cada torn un bfs/dijkstra(limitat a distancia 10 o algo aixi) 
+//on comenci inicialitzant amb distancia 0 tots els cotxes de l'enemic
+//per saber on poden arribar
 
 struct PLAYER_NAME : public Player {
     
