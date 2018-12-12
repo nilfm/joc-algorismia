@@ -714,7 +714,7 @@ struct PLAYER_NAME : public Player {
             Dir d = Dir(i);
             Pos p = me + d;
             if (pos_ok(p) and cell(p).type == City) return d;
-            if (pos_ok(p) and is_safe(p, false) and distance_from_enemy_car[p.i][p.j] > dist_car) return d;
+            if (pos_ok(p) and warrior_can_go(p) and is_safe(p, false) and distance_from_enemy_car[p.i][p.j] > dist_car) return d;
         }
         return None;
     }
