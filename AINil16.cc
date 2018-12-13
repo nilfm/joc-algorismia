@@ -12,7 +12,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME dumMY
+#define PLAYER_NAME Nil16
 
 struct PLAYER_NAME : public Player {
     
