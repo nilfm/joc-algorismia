@@ -12,7 +12,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil16
+#define PLAYER_NAME dumMY
 
 struct PLAYER_NAME : public Player {
     
@@ -49,6 +49,8 @@ struct PLAYER_NAME : public Player {
     const int MIN_CITIES_OWNED = 4;
     //Distancia a la qual el warrior intentara apropar-se a una ciutat
     const int MAX_DIST_CITY = 8;
+    //Distancia a la qual el warrior intentara anar a una ciutat buida propera, com a primera opcio
+    const int DIST_EMPTY_CITY = 3;
     
     // Typedefs
     typedef vector<int> VI;
@@ -298,6 +300,11 @@ struct PLAYER_NAME : public Player {
                 }
                 
                 int cost = (cell(p).type == Road ? 1 : 4);
+                if (cell(start).type == Road and pare[p] == start) {
+                    int my = me();
+                    int r = (round()+1)%4;
+                    if (r == my) cost = 1;
+                }
                 for (int i = 0; i < 8; i++) {
                     Dir d = Dir(i);
                     Pos p2 = p+d;
@@ -724,7 +731,7 @@ struct PLAYER_NAME : public Player {
         //Si anem perdent
         int my = total_score(me());
         for (int i = 1; i < 4; i++) {
-            if (total_score((me()+i)%4) > my and round() > 250) return true;
+            if (total_score((me()+i)%4) > my and round() > 200) return true;
         }
         
         //Si tenim menys d'un cert nombre de ciutats ciutats
@@ -733,15 +740,27 @@ struct PLAYER_NAME : public Player {
         return false;
     }
     
-    Dir adjacent_empty_city(const Pos& p) {
-        for (int i = 0; i < 8; i++) {
-            Dir d = Dir(i);
-            Pos p2 = p+d;
-            if (pos_ok(p2) and cell(p2).type == City) {
-                int n_city = num_city(p2);
-                if (allies_in_city[n_city] + allies_entering_city[n_city] - allies_leaving_city[n_city] == 0 and enemies_in_city[n_city] == 0) {
-                    return d;
+    Dir nearby_empty_city(const Pos& p) {
+        int min_dist = INF;
+        Pos best_pos(-1, -1);
+        for (int i = 0; i < (int)all_cities.size(); i++) {
+            if (allies_in_city[i] == 0 and enemies_in_city[i] == 0) {
+                for (int j = 0; j < (int)all_cities[i].size(); j++) {
+                    Pos city = all_cities[i][j];
+                    int dist = distance(p, city);
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        best_pos = city;
+                    }
                 }
+            }
+        }
+        if (min_dist < DIST_EMPTY_CITY) {
+            for (int i = 0; i < 8; i++) {
+                Dir d = Dir(i);
+                Pos p2 = p + d;
+                int dist = distance(p2, best_pos);
+                if (is_safe(p2, false) and dist < min_dist) return d;
             }
         }
         return None;
@@ -796,11 +815,11 @@ struct PLAYER_NAME : public Player {
             bool moved = false;
             
             if (status(me()) < MAX_STATUS) {
-                //Prioritat 1: Si estem al costat d'una ciutat buida
+                //Prioritat 1: Si estem a prop d'una ciutat buida
 
                 //cerr << "  Empty city" << endl;
                 if (curr.water >= MIN_WATER and cell(curr.pos).type != City) {
-                    Dir d = adjacent_empty_city(curr.pos);
+                    Dir d = nearby_empty_city(curr.pos);
                     if (d != None) {
                         //cerr << "  Moved to empty city from " << curr.pos << endl;
                         move(my_warriors[w], d);
