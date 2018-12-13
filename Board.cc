@@ -643,7 +643,7 @@ void Board::next (const vector<Action>& act, ostream& os) {
       Unit& u = unit_[id];
       assert(ut_ok(u.type));
       if (u.type == Warrior and u.player == round()%4
-          and cell(u.pos).owner == u.player)
+          and cell(u.pos).type == City)
         u.food = warriors_health();
     }
 
@@ -721,7 +721,8 @@ int Board::area (int i, int j) {
 
 
 bool Board::before (const vector<Pos>& V1, const vector<Pos>& V2) {
-  return V1.size() > V2.size();
+  if (V1.size() != V2.size()) return V1.size() > V2.size();
+  return V2.front() < V1.front();
 }
 
 
@@ -857,8 +858,10 @@ void Board::make_walls (const vector<Pos>& Z) {
   int q = Z.size();
   if (q == 0) return;
   set<Pos> S(Z.begin(), Z.end());
-  make_wall(Z[random(0, q - 1)], 4*random(0, 1), S);
-  make_wall(Z[random(0, q - 1)], 2 + 4*random(0, 1), S);
+  int r1 = random(0, q - 1);
+  make_wall(Z[r1], 4*random(0, 1), S);
+  int r2 = random(0, q - 1);
+  make_wall(Z[r2], 2 + 4*random(0, 1), S);
 }
 
 
