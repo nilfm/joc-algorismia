@@ -36,7 +36,7 @@ struct PLAYER_NAME : public Player {
     //Maxima distancia de la carretera a la qual estara un cotxe en qualsevol moment
     const int MAX_DIST_ROAD = 3;
     //Distancia a la qual el cotxe mirara al voltant d'un soldat per trobar altres soldats a prop
-    const int ACCUMULATION_RADIUS = 15;
+    const int ACCUMULATION_RADIUS = 10;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
     const int ENEMY_CAR_RANGE = 8;
     //Minima aigua a la qual intentara anar a buscar aigua
