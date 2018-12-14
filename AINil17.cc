@@ -12,7 +12,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Nil17
+#define PLAYER_NAME duMMy
 
 struct PLAYER_NAME : public Player {
     
@@ -928,10 +928,10 @@ struct PLAYER_NAME : public Player {
     void move_cars() {
         //Per cada cotxe que tinc
         for (int c = 0; c < (int)my_cars.size(); c++) {
-            cerr << "Car " << my_cars[c] << endl;
+            //cerr << "Car " << my_cars[c] << endl;
             Unit curr = unit(my_cars[c]);
-            cerr << "At position " << curr.pos << endl;
-            cerr << "Current fuel: " << curr.food << endl;
+            //cerr << "At position " << curr.pos << endl;
+            //cerr << "Current fuel: " << curr.food << endl;
             bool moved = false;
             //si es pot moure aquest torn
             if (can_move(my_cars[c])) {
@@ -941,7 +941,7 @@ struct PLAYER_NAME : public Player {
                         //si tenim un warrior enemic adjacent
                         Dir adj = adjacent_enemy(curr.pos, true);
                         if (adj != None) {
-                            cerr << "  Attacked an adjacent enemy warrior" << endl;
+                            //cerr << "  Attacked an adjacent enemy warrior" << endl;
                             move(my_cars[c], adj);
                             moved = true;
                         }
@@ -949,7 +949,7 @@ struct PLAYER_NAME : public Player {
                             bool hasfuel = curr.food != 0;
                             Dir d = find_nearest_fuel(curr.pos, hasfuel);
                             if (d != None) {
-                                cerr << "  Looking for fuel" << endl;
+                                //cerr << "  Looking for fuel" << endl;
                                 move(my_cars[c], d);
                                 moved = true;
                             }
@@ -958,14 +958,14 @@ struct PLAYER_NAME : public Player {
                     if (not moved) {
                         Dir d = dijkstra(curr.pos);
                         if (d != None) {
-                            cerr << "  Looking for enemy warrior" << endl;
+                            //cerr << "  Looking for enemy warrior" << endl;
                             move(my_cars[c], d);
                             moved = true;
                         }
                     }
                 }
                 if (not moved) {
-                    cerr << "  Moving in most improved direction" << endl;
+                    //cerr << "  Moving in most improved direction" << endl;
                     Dir d_improve = most_improved_direction(curr.pos, true);
                     move(my_cars[c], d_improve);
                 }
