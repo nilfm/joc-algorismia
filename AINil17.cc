@@ -36,7 +36,7 @@ struct PLAYER_NAME : public Player {
     //Maxima distancia de la carretera a la qual estara un cotxe en qualsevol moment
     const int MAX_DIST_ROAD = 3;
     //Distancia a la qual el cotxe mirara al voltant d'un soldat per trobar altres soldats a prop
-    const int ACCUMULATION_RADIUS = 7;
+    const int ACCUMULATION_RADIUS = 15;
     //Maxima distancia a la qual un soldat mirara per trobar cotxes enemics
     const int ENEMY_CAR_RANGE = 8;
     //Minima aigua a la qual intentara anar a buscar aigua
@@ -362,7 +362,11 @@ struct PLAYER_NAME : public Player {
         for (int i = 0; i < 8; i++) {
             Dir d = Dir(i);
             Pos p = start+d;
-            if ((not car or is_safe(p, true)) and cell_unit(cell(p)) == 3 and (not car or cell(p).type != City)) return d;
+            if (pos_ok(p)) {
+                if ((not car or is_safe(p, true)) and cell_unit(cell(p)) == 3 and (not car or cell(p).type != City)) {
+                    return d;
+                }
+            }
         }
         return None;
     }
@@ -817,7 +821,6 @@ struct PLAYER_NAME : public Player {
             
             if (status(me()) < MAX_STATUS) {
                 //Prioritat 1: Si estem a prop d'una ciutat buida
-
                 //cerr << "  Empty city" << endl;
                 if (curr.water >= MIN_WATER and cell(curr.pos).type != City) {
                     Dir d = nearby_empty_city(curr.pos);
@@ -830,7 +833,6 @@ struct PLAYER_NAME : public Player {
                 //cerr << "  End empty city" << endl;
                 
                 //Prioritat 2: Si estem massa a prop d'un cotxe i som fora d'una ciutat
-                
                 //cerr << "  Escape" << endl;
                 int dist_car = distance_from_enemy_car[curr.pos.i][curr.pos.j];
                 if (not moved and dist_car < INF) {
@@ -846,7 +848,6 @@ struct PLAYER_NAME : public Player {
                 //cerr << "  End escape" << endl;
                 
                 //Prioritat 3: Si estem a prop d'un soldat enemic
-                
                 //TO DO: Millorar fight AI
                 //if an enemy soldier is next to you
                 //cerr << "  Fight" << endl;
@@ -859,8 +860,6 @@ struct PLAYER_NAME : public Player {
                 //cerr << "  End fight" << endl;
                 
                 //Prioritat 4: Si tenim set
-                
-                //if you need water - aquesta part ja esta be
                 //cerr << "  Water" << endl;
                 if (not moved and curr.water < MIN_WATER) {
                     Dir d = find_nearest_water(curr.pos);
@@ -871,9 +870,9 @@ struct PLAYER_NAME : public Player {
                     }
                 }
                 //cerr << "  End water" << endl;
-                
+        
                 //Prioritat 5: Si tenim gana
-                
+                //cerr << "  Food" << endl;
                 if (not moved and curr.food < MIN_FOOD) {
                     Dir d = find_nearest_city(curr.pos);
                     if (d != None) {
@@ -882,9 +881,10 @@ struct PLAYER_NAME : public Player {
                         moved = true;
                     }
                 }
+                //cerr << "  End food" << endl;
                 
                 //Prioritat 6: Si estem dins d'una ciutat 
-                
+                //cerr << "  Inside city" << endl;
                 if (not moved and cell(curr.pos).type == City) {
                     int n_city = num_city(curr.pos);
                     if (city_balance(n_city) > 0 and enemies_in_city[n_city] > 0) {
@@ -894,9 +894,9 @@ struct PLAYER_NAME : public Player {
                         moved = true;
                     }
                 }
+                //cerr << "  End inside city" << endl;
                 
                 //Prioritat 7: Si estem en mode agressiu i volem conquerir
-                
                 //cerr << "  Conquer" << endl;
                 if (not moved and (aggressive or distance_from_city[curr.pos.i][curr.pos.j] > MAX_DIST_CITY)) {
                     int n_city = -1;
@@ -916,11 +916,13 @@ struct PLAYER_NAME : public Player {
             }
             
             //Si no hem mogut en el torn
+            //cerr << "  Most improved direction" << endl;
             if (not moved) {
                 //cerr << "  Moved to most improved direction" << endl;
                 Dir d_improve = most_improved_direction(curr.pos, false);
                 move(my_warriors[w], d_improve);
             }
+            //cerr << "  End most improved direction" << endl;
         }
     }
     
